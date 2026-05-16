@@ -1,0 +1,6 @@
+__pycache__
+*.pyc
+
+Nagisa.cache
+Installed.cache
+repositories.json

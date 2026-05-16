@@ -1,0 +1,14 @@
+{
+	"Name": "Adellian Package Manager",
+	"Description": "MikaArchive-Based Package Manager to install Adellian Packages and System Tweaks.",
+	"Author": ["Ascellayn", "The Sirio Network"],
+	"Contributors": [],
+	"License": "TSN License 2.2 - Base",
+	"License_Year": "2026",
+	"Codename": "Adellian_Mika",
+	"Branch": "Azure",
+	"Version": [0,0,0],
+	"Version_Prefix": "",
+	"Version_Suffix": "",
+	"TSNA": [6,1,0]
+}
