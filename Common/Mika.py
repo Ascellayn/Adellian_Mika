@@ -14,7 +14,7 @@ XX XX XX                    # MikaRoll Version (append each byte as a Little End
 ```
 """
 from TSN_Abstracter import *;
-import pickle, lzma, json;
+import pickle, lzma, json, os;
 from typing import Literal;
 
 
@@ -25,7 +25,7 @@ from typing import Literal;
 MIKAROLLER_VERSION: tuple[int, int, int] = (1,0,0);
 MIKAROLL_SIGNATURE: bytes = "MikaRoll".encode("ASCII");
 MIKAROLL_VERSION: bytes = b"".join([x.to_bytes(1, "little") for x in MIKAROLLER_VERSION]);
-MIKAROLL_RESERVED: bytes = b"\xFF\xFF\xFF"
+MIKAROLL_RESERVED: bytes = b"\xFF\xFF\xFF";
 
 
 
@@ -197,23 +197,29 @@ def Roll(Path: str, Output: str, MikaPackage: str | MikaRoll_Header, Option: str
 
 class Unroll:
 	@staticmethod
-	def Get(Wildcard: str | bytes) -> bytes:
+	def Get(Wildcard: str | bytes, Max: int = -1, Seek: int = -1) -> bytes:
 		match Wildcard:
 			case str():
 				with open(Wildcard, "r+b") as f:
-					return f.read();
-			case bytes(): return Wildcard;
+					if (Seek != -1): f.seek(Seek);
+					if (Max == -1): return f.read();
+					return f.read(Max);
+			case bytes():
+				if (Seek != -1 and Max != -1): return Wildcard[Seek:Max+Seek];
+				if (Seek != -1 and Max == -1): return Wildcard[Seek:];
+				if (Seek == -1 and Max != -1): return Wildcard[:Max];
+				return Wildcard;
 
 
 
 	@staticmethod
-	def Roller_Version(MikaRoll: bytes) -> bytes:
-		return MikaRoll[8:11];
+	def Roller_Version(MikaRoll: str | bytes) -> bytes:
+		return Unroll.Get(MikaRoll, 16)[8:11];
 
 
 
 	@staticmethod
-	def Valid(MikaRoll: bytes, Raise: bool = True) -> bool:
+	def Valid(MikaRoll: str | bytes, Raise: bool = True) -> bool:
 		if (MikaRoll[:8] != MIKAROLL_SIGNATURE):
 			msg: str = f"Invalid Signature: {MikaRoll[:8]}";
 			if (Raise): raise Exception(msg);
@@ -232,17 +238,16 @@ class Unroll:
 
 
 	@staticmethod
-	def Header_Size(MikaRoll: bytes) -> int:
-		return int.from_bytes(MikaRoll[11:13], "little");
+	def Header_Size(MikaRoll_Signature: bytes) -> int:
+		return int.from_bytes(MikaRoll_Signature[11:13], "little");
 
 
 
 	@staticmethod
 	def Header(MikaRoll: str | bytes) -> MikaRoll_Header:
-		MikaRoll = Unroll.Get(MikaRoll);
 		return json.loads(
-			lzma.decompress(
-				MikaRoll[16 : Unroll.Header_Size(MikaRoll)+16],
+			lzma.decompress( # Signature → Header Size → Only Header → Decompress → Load JSON
+				Unroll.Get(MikaRoll, Unroll.Header_Size(Unroll.Get(MikaRoll, 16)), 16),
 				lzma.FORMAT_XZ
 			)
 		);

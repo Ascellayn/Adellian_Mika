@@ -13,73 +13,83 @@ if (__name__ == "__main__"):
 
 	Sd: argparse.ArgumentParser = S.add_parser("download", help="Download a raw .MikaArchive of specific package.");
 	Sd.add_argument("packages", nargs="*", help="List of packages to download. Format {ID}¤{Option}, if only {ID} is provided, you will be prompted to make a choice.");
+
+
+
+	Sd: argparse.ArgumentParser = S.add_parser("info", help="Get all information about a specified MikaRoll.");
+	Sd.add_argument("files", nargs="*", help="List of files to parse information from.");
+
+
+
 	A: argparse.Namespace = Parser.parse_args();
 
+
+
+
+
 	match A.action:
-		case "update":
-			Nagisa.Update(); exit(0);
+		case "update": Nagisa.Update(); exit(0);
+
+
+
+
+
+		case "info":
+			for pkg in A.files:
+				roll: str = f"{OG_DIR}/{pkg}";
+				if (not File.Exists(roll)): Log.Error(f"{pkg}: file not found."); continue;
+
+
+
+				Log.Info(f"Reading {roll}...");
+				MikaRoll_Version: str = TSN_Abstracter.Version([x for x in Mika.Unroll.Roller_Version(roll)]); # pyright: ignore[reportArgumentType]
+				MikaRoll_Header: Type.MikaRoll_Header = Mika.Unroll.Header(roll);
+				Log.Awaited().OK();
+
+
+
+				print(f"MikaRoll Archive - Version {MikaRoll_Version}");
+				print("");
+				print(f"ID: {MikaRoll_Header['ID']}");
+				print(f"Name: {MikaRoll_Header['Name']}");
+				print(f"Description: {MikaRoll_Header['Description']}");
+				print(f"Version: {TSN_Abstracter.Version(MikaRoll_Header['Version'])}"); # pyright: ignore[reportArgumentType]
+				print("");
+				print(f"Required by Adellian: {', '.join(MikaRoll_Header['Required'])}");
+				print(f"Installed by default on Adellian: {', '.join(MikaRoll_Header['Required'])}");
+				print(f"Package conflicts with: {', '.join(MikaRoll_Header['Conflicts'])}");
+				print("");
+
+				print("Install Options:")
+				for i, opt in enumerate(MikaRoll_Header["Options"], start=1):
+					print(f"\t[{i}/{len(MikaRoll_Header["Options"])}] - {opt['Name']}: {opt["Description"]}");
+					print(f"\tScripts Folder: {opt['Scripts']['Data']}");
+					print(f"\tInstall Script: {opt['Scripts']['Install']}");
+					print(f"\tUninstall Script: {opt['Scripts']['Uninstall']}");
+					print(f"\tUpdate Script: {opt['Scripts']['Update']}");
+
+				print(f"\n");
+
+			exit(0);
+
+
 
 
 
 		case "download":
-			if (not File.Exists("Nagisa.cache")): Log.Critical(f"`Nagisa.cache` is missing, run `apm update` first!"); exit(1);
-			# Gather all installable packages
-			Cached: Type.Nagisa_Packages = cast(Type.Nagisa_Packages, File.JSON_Read("Nagisa.cache", True));
-			PKGs: dict[str, list[str]] = {};
-			idx: dict[str, int] = {};
-			for i, mpkg in enumerate(Cached["Packages"]):
-				PKGs[mpkg["ID"]] = [];
-				idx[mpkg['ID']] = i;
-				for opt in mpkg["Options"]:
-					PKGs[mpkg["ID"]].append(opt["Name"]);
-
-
-
-			# Requested Packages
-			Packages: list[list[str]] = [];
-			for pkg in A.packages:
-				if ("¤" in pkg): Packages.append(pkg.split("¤", 1)); continue;
-				Packages.append([pkg]);
-
-			# Validate against cache
-			for i, pkg in enumerate(Packages):
-				if (pkg[0] not in PKGs.keys()): Log.Critical(f"Package \"{pkg[0]}\" does not exist."); exit(1);
-				if (len(pkg) == 1):
-					TUI.Init();
-					TUI.Prompt(f"Missing Option", f"You have selected the package \"{pkg[0]}\" for install, but did not specify which version to install!\n You will need to select it manually.")
-					entries: TUI.Entries = [
-						TUI.Entry(20, f"Package Option Selection", Bold=True),
-						TUI.Entry(20, "")
-					];
-					for opt in Cached["Packages"][idx[pkg[0]]]["Options"]:
-						entries.append(TUI.Entry(2, opt["Name"], opt["Description"], Value=opt["Name"]));
-
-					Option: str | None = TUI.Menu(entries); TUI.Exit();
-					if (not Option): Log.Error(f"Installation aborted."); exit(0);
-
-					Packages[i].append(Option);
-
-
-
-			Log.Stateless(f"Downloading packages...");
-			R: httpx.Response = httpx.post("http://localhost:7040/v1/Download", headers=HEADERS, json={"Packages": Packages});
-			if (R.status_code != 200): Log.Awaited().ERROR(f"Non-OK HTTP Code Received: {R.status_code}"); exit();
-			Log.Awaited().OK();
-
-
-
-			Log.Stateless(f"Unpickling...");
-			Nagisa_Downloads: Type.Nagisa_Downloads = pickle.loads(R.content);
-			Log.Awaited().OK();
+			Nagisa_Downloads: Type.Nagisa_Downloads = Nagisa.Download(A.packages);
 
 			for pkg in Nagisa_Downloads["Packages"].keys():
-				if (not Mika.Unroll.Valid(Nagisa_Downloads["Packages"][pkg])): continue;
+				if (not Mika.Unroll.Valid(Nagisa_Downloads["Packages"][pkg], False)): continue;
 				with open(f"{OG_DIR}/{pkg}.MikaRoll", "w+b") as f:
 					f.write(Nagisa_Downloads["Packages"][pkg]);
 					Log.Info(f"Downloaded \"{pkg}.MikaRoll\" successfully.");
-				print(Mika.Unroll.Header(Nagisa_Downloads["Packages"][pkg]));
 
 			exit(0);
+
+
+
+
 
 	print(f"{App.Name} {TSN_Abstracter.App_Version()} (TSNA {TSN_Abstracter.Version()})");
 	Parser.print_help();
