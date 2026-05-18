@@ -60,7 +60,7 @@ if (__name__ == "__main__"):
 				print(f"Package conflicts with: {', '.join(MikaRoll_Header['Conflicts'])}");
 				print("");
 
-				print("Install Options:")
+				print("Install Options:");
 				for i, opt in enumerate(MikaRoll_Header["Options"], start=1):
 					print(f"\t[{i}/{len(MikaRoll_Header["Options"])}] - {opt['Name']}: {opt["Description"]}");
 					print(f"\tScripts Folder: {opt['Scripts']['Data']}");

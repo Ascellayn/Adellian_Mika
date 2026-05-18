@@ -117,11 +117,11 @@ def Roll(Path: str, Output: str, MikaPackage: str | MikaRoll_Header, Option: str
 	Log.Info(f"Mika Roller Utility - {TSN_Abstracter.Version(MIKAROLLER_VERSION)}");
 	Log.Stateless(f"Rolling {Output}...");
 	Log.Stateless(f"Reading MikaPackage...");
-	if (not isinstance(MikaPackage, str)): HEADER: MikaRoll_Header = MikaPackage;
+	if (not isinstance(MikaPackage, str)): MikaRoll_Header: MikaRoll_Header = MikaPackage;
 	else:
 		p: str = f"{Path}/.adellian/{MikaPackage}";
 		if (not File.Exists(p)): raise FileNotFoundError(f"MikaPackage \"{Path}/.adellian/{MikaPackage}\" does not exist.");
-		HEADER: MikaRoll_Header = cast(MikaRoll_Header, File.JSON_Read(p)); del p;
+		MikaRoll_Header: MikaRoll_Header = cast(MikaRoll_Header, File.JSON_Read(p)); del p;
 	del MikaPackage;
 	Log.Awaited().OK();
 
@@ -130,10 +130,10 @@ def Roll(Path: str, Output: str, MikaPackage: str | MikaRoll_Header, Option: str
 	Log.Stateless(f"Validating MikaPackage...");
 	# Option Verification
 	pkgopt: MikaRoll_PKGOpt | None = None;
-	for opt in HEADER["Options"]:
+	for opt in MikaRoll_Header["Options"]:
 		if (opt["Name"] == Option): pkgopt = opt; break;
 	if (not pkgopt): raise Not_Found(f"Option \"{Option}\" not found.");
-	HEADER["Options"] = [pkgopt];
+	MikaRoll_Header["Options"] = [pkgopt];
 	del Option; del pkgopt;
 	Log.Awaited().OK();
 
@@ -142,15 +142,15 @@ def Roll(Path: str, Output: str, MikaPackage: str | MikaRoll_Header, Option: str
 
 
 	Log.Stateless(f"Adding Cutlery...");
-	scripts: dict[str, bytes] = __Archiver(f"{Path}/.adellian/{HEADER['Options'][0]['Scripts']['Data']}/");
+	scripts: dict[str, bytes] = __Archiver(f"{Path}/.adellian/{MikaRoll_Header['Options'][0]['Scripts']['Data']}/");
 	Log.Awaited().OK(f"{len(scripts.keys())} files");
 
 
 
 	Log.Stateless(f"Cooking Roll...");
 	archive: dict[str, bytes] = {};
-	for f in HEADER["Data"][0]: archive = archive | __Archiver(f"{Path}/{f}", f"./{f}"); # Folders
-	for f in HEADER["Data"][1]: archive[f"./{f}"] = __Read(f"{Path}/{f}"); # Files
+	for f in MikaRoll_Header["Data"][0]: archive = archive | __Archiver(f"{Path}/{f}", f"./{f}"); # Folders
+	for f in MikaRoll_Header["Data"][1]: archive[f"./{f}"] = __Read(f"{Path}/{f}"); # Files
 	Log.Awaited().OK(f"{len(archive.keys())} files");
 
 
@@ -177,7 +177,7 @@ def Roll(Path: str, Output: str, MikaPackage: str | MikaRoll_Header, Option: str
 
 
 	Log.Stateless(f"Labeling Roll...");
-	MikaHeader: bytes = lzma.compress(json.dumps(HEADER).encode("utf-8"), format=lzma.FORMAT_XZ, preset=9 | lzma.PRESET_EXTREME);
+	MikaHeader: bytes = lzma.compress(json.dumps(MikaRoll_Header).encode("utf-8"), format=lzma.FORMAT_XZ, preset=9 | lzma.PRESET_EXTREME);
 	if (len(MikaHeader) > 65536): raise OverflowError(f"MikaHeader is over 64KiB in size! ({len(MikaHeader)} Bytes)");
 	Log.Awaited().OK();
 

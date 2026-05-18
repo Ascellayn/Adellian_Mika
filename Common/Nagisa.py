@@ -79,7 +79,7 @@ def Download(Requested: list[str]) -> Type.Nagisa_Downloads:
 		if (len(pkg) == 1):
 			if (len(Cached["Packages"][idx[pkg[0]]]["Options"]) != 1):
 				TUI.Init();
-				TUI.Prompt(f"Missing Option", f"You have selected the package \"{pkg[0]}\" for install, but did not specify which version to install!\n You will need to select it manually.")
+				TUI.Prompt(f"Missing Option", f"You have selected the package \"{pkg[0]}\" for install, but did not specify which version to install!\n You will need to select it manually.");
 				entries: TUI.Entries = [
 					TUI.Entry(20, f"Package Option Selection", Bold=True),
 					TUI.Entry(20, "")
