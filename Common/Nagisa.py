@@ -5,7 +5,7 @@ from . import Mika;
 
 def Update() -> None:
 	if (not File.Exists("repositories.json")):
-		File.JSON_Write("repositories.json", ["https://repo.sirio-network.com/adellian", "http://127.0.0.1:7040/"]);
+		File.JSON_Write("repositories.json", ["https://repo.sirio-network.com/adellian", "http://127.0.0.1:7040"]);
 
 	Nagisa_Packages: Type.Nagisa_Packages = {
 		"Last_Update": 0,

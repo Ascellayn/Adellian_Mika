@@ -10,6 +10,7 @@ if (__name__ == "__main__"):
 
 	S: argparse._SubParsersAction = Parser.add_subparsers(dest="action");
 	S.add_parser("update", help="Update list of known installable-packages");
+	S.add_parser("list", help="Enter an interactive TUI to view every package known to Mika. You can get info about packages and even download / (un)install them.");
 
 	Sd: argparse.ArgumentParser = S.add_parser("download", help="Download a raw .MikaArchive of specific package.");
 	Sd.add_argument("packages", nargs="*", help="List of packages to download. Format {ID}¤{Option}, if only {ID} is provided, you will be prompted to make a choice.");
@@ -86,6 +87,24 @@ if (__name__ == "__main__"):
 					Log.Info(f"Downloaded \"{pkg}.MikaRoll\" successfully.");
 
 			exit(0);
+
+
+		case "list":
+			if (not File.Exists("Nagisa.cache")): Log.Critical(f"`Nagisa.cache` is missing, run `apm update` first!"); exit(1);
+			Nagisa_Packages: Type.Nagisa_Packages = cast(Type.Nagisa_Packages, File.JSON_Read("Nagisa.cache", True));
+
+			entries: TUI.Entries = [];
+			for pkg in Nagisa_Packages["Packages"]:
+				entries.append(TUI.Entry(0, pkg["Name"], pkg["Description"], pkg["ID"]));
+
+			entries.append(TUI.Entry(20, ""));
+			entries.append(TUI.Entry(2, "Exit", "Quit the interactive Mika Package Manager."));
+
+			TUI.Init();
+			TUI.Menu(entries);
+			TUI.Exit();
+			exit(0);
+
 
 
 
